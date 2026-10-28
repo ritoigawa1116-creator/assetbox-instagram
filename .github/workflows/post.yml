@@ -1,0 +1,51 @@
+name: Instagram自動投稿
+
+on:
+  schedule:
+    - cron: "30 22 * * *"   # 毎日 7:30（日本時間）。投稿予定がある日だけ投稿する
+  workflow_dispatch:
+    inputs:
+      post_date:
+        description: "投稿する日付 YYYY-MM-DD（空なら今日）"
+        required: false
+      dry_run:
+        description: "1 にすると画像作成までで投稿しない"
+        required: false
+        default: "0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: instagram-post
+  cancel-in-progress: false
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: フォントとブラウザを準備
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq fonts-noto-cjk fonts-noto-cjk-extra > /dev/null
+          pip install -q playwright==1.47.0
+          python -m playwright install --with-deps chromium > /dev/null
+
+      - name: 投稿
+        env:
+          SHEET_CSV_URL: ${{ vars.SHEET_CSV_URL }}
+          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          POST_DATE: ${{ github.event.inputs.post_date }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
+        run: |
+          git config user.name "assetbox-bot"
+          git config user.email "assetbox-bot@users.noreply.github.com"
+          python post.py

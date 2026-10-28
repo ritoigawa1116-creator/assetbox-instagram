@@ -1,0 +1,36 @@
+name: Instagramトークン更新
+
+# Instagramのアクセストークンは60日で期限が切れるため、毎週延長する。
+# 新しいトークン文字列が返ってきた場合は、Secrets「GH_PAT」（このリポジトリのSecretsを書き換えられる
+# GitHubトークン）があれば IG_TOKEN を自動で更新する。
+
+on:
+  schedule:
+    - cron: "0 21 * * 0"   # 毎週月曜 6:00（日本時間）
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: トークンを延長
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+          GH_PAT: ${{ secrets.GH_PAT }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -e
+          res=$(curl -sS --fail-with-body "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=${IG_TOKEN}")
+          new=$(echo "$res" | python3 -c 'import sys,json;print(json.load(sys.stdin)["access_token"])')
+          days=$(echo "$res" | python3 -c 'import sys,json;print(int(json.load(sys.stdin)["expires_in"])//86400)')
+          echo "::add-mask::$new"
+          echo "延長しました。残り約 ${days} 日"
+          if [ "$new" != "$IG_TOKEN" ]; then
+            if [ -n "$GH_PAT" ]; then
+              echo "$new" | GH_TOKEN="$GH_PAT" gh secret set IG_TOKEN --repo "$REPO"
+              echo "IG_TOKEN を新しいトークンに更新しました"
+            else
+              echo "::error::新しいトークンが発行されましたが GH_PAT が無いため保存できません。残り ${days} 日以内に更新が必要です"
+              exit 1
+            fi
+          fi
