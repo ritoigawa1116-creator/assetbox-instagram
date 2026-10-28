@@ -40,8 +40,8 @@ jobs:
 
       - name: 投稿
         env:
-          SHEET_CSV_URL: ${{ vars.SHEET_CSV_URL }}
-          IG_USER_ID: ${{ vars.IG_USER_ID }}
+          SHEET_CSV_URL: ${{ vars.SHEET_CSV_URL || 'https://docs.google.com/spreadsheets/d/1ZhM_EETDJkMoCK6IbtOwXACEDRCaTrbeXcVcdVxthJE/gviz/tq?tqx=out:csv&sheet=%E6%8A%95%E7%A8%BF' }}
+          IG_USER_ID: ${{ vars.IG_USER_ID || '17841433572576406' }}
           IG_TOKEN: ${{ secrets.IG_TOKEN }}
           POST_DATE: ${{ github.event.inputs.post_date }}
           DRY_RUN: ${{ github.event.inputs.dry_run }}

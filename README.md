@@ -7,5 +7,5 @@
 - 失敗すると GitHub からメールが届きます。
 
 設定値（Settings → Secrets and variables → Actions）
-- Variables: `SHEET_CSV_URL`（投稿管理表の公開CSV）, `IG_USER_ID`
+- Variables（任意）: `SHEET_CSV_URL`, `IG_USER_ID`（未設定ならワークフロー内の既定値を使用）
 - Secrets: `IG_TOKEN`（Instagramアクセストークン）, 任意で `GH_PAT`
