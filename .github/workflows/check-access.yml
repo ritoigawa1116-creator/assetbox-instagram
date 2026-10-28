@@ -1,0 +1,34 @@
+name: 権限チェック（件数のみ表示）
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: コメント・DMの読み取り権限を確認
+        env:
+          IG_TOKEN: ${{ secrets.IG_TOKEN }}
+        run: |
+          python3 - <<'EOF'
+          import json, os, urllib.request, urllib.parse
+          T = os.environ["IG_TOKEN"]
+          def get(path, **p):
+              p["access_token"] = T
+              url = f"https://graph.instagram.com/v23.0/{path}?" + urllib.parse.urlencode(p)
+              try:
+                  with urllib.request.urlopen(url, timeout=30) as r:
+                      return json.load(r)
+              except urllib.error.HTTPError as e:
+                  return {"error": json.loads(e.read() or b"{}").get("error", {}).get("message", str(e.code))}
+          me = get("me", fields="user_id,username,followers_count,media_count")
+          print("アカウント:", me.get("username"), "/ フォロワー:", me.get("followers_count"), "/ 投稿数:", me.get("media_count"), me.get("error", ""))
+          media = get("me/media", fields="id,comments_count", limit=10)
+          print("投稿一覧:", len(media.get("data", [])), "件", media.get("error", ""))
+          if media.get("data"):
+              c = get(f"{media['data'][0]['id']}/comments", fields="id,timestamp", limit=5)
+              print("コメント取得:", "OK" if "data" in c else "NG", len(c.get("data", [])), "件", c.get("error", ""))
+          conv = get("me/conversations", platform="instagram", fields="id,updated_time", limit=5)
+          print("DM一覧取得:", "OK" if "data" in conv else "NG", len(conv.get("data", [])), "件", conv.get("error", ""))
+          EOF
