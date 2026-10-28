@@ -52,8 +52,8 @@ def http(method, url, params=None, retries=3):
 
 
 def parse_date(s):
-    s = (s or "").strip().replace("-", "/")
-    for fmt in ("%Y/%m/%d",):
+    s = (s or "").strip().replace("-", "/").split(" ")[0]
+    for fmt in ("%Y/%m/%d", "%m/%d/%Y"):
         try:
             return dt.datetime.strptime(s, fmt).date()
         except ValueError:
